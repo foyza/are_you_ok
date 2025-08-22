@@ -1,26 +1,12 @@
-from deeppavlov import build_model, configs
+import numpy as np
+import joblib
+from sklearn.linear_model import LogisticRegression
 
-# Загружаем модель DeepPavlov Grammar Checker
-model = build_model(configs.syntax.syntax_ru, download=True)
+X = np.array([[5], [10], [50], [100], [150], [200]])
+y = np.array([0, 0, 1, 1, 1, 1])
 
-# Пример тестовых предложений
-examples = [
-    "Я иду в магазин",
-    "Она идти в магазин",
-    "Сегодня хорошая погода",
-    "Сегодняхорошая погода",
-    "Мы учимся в университете",
-    "Мы учится в университете"
-]
+model = LogisticRegression()
+model.fit(X, y)
 
-for sentence in examples:
-    corrected = model([sentence])[0]
-    changes = sum(1 for a, b in zip(sentence, corrected) if a != b)
-    conf = max(0.0, 1 - changes / max(len(sentence), 1))
-    conf_percent = round(conf * 100, 1)
-    
-    if sentence == corrected:
-        print(f"✅ '{sentence}' — грамматично, confidence: {conf_percent}%")
-    else:
-        print(f"❌ '{sentence}' — ошибки, confidence: {conf_percent}%")
-        print(f"   Исправлено: {corrected}")
+joblib.dump(model, "model.pkl")
+print("Модель обучена и сохранена как model.pkl")
