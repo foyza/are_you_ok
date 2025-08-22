@@ -6,3 +6,4 @@ COPY . .
 RUN python train_model.py
 CMD ["python", "bot.py"]
 
+
