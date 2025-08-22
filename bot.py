@@ -4,7 +4,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from dotenv import load_dotenv
 import joblib
-import numpy as np
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -14,26 +13,26 @@ dp = Dispatcher()
 
 model = joblib.load("model.pkl")
 
-kb = ReplyKeyboardMarkup(resize_keyboard=True)
-kb.add(KeyboardButton("Классифицировать"))
+kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Классифицировать")],
+    ],
+    resize_keyboard=True
+)
 
-@dp.message_handler(commands=["start"])
+@dp.message(commands=["start"])
 async def start(message: types.Message):
-    await message.answer("Привет! Отправь текст, и я предскажу его класс.", reply_markup=kb)
+    await message.answer("Привет! Отправь текст для классификации:", reply_markup=kb)
 
-@dp.message_handler(lambda message: message.text != "Классифицировать")
-async def classify(message: types.Message):
+@dp.message()
+async def classify_text(message: types.Message):
     text = message.text
-    # Модель ждет вектор, здесь просто пример с длиной текста
-    X = np.array([[len(text)]])
-    pred = model.predict(X)[0]
-    await message.answer(f"Класс текста: {pred}")
+    # Здесь предполагаем, что модель принимает список текстов
+    prediction = model.predict([text])[0]
+    await message.answer(f"Результат классификации: {prediction}")
 
-@dp.message_handler(lambda message: message.text == "Классифицировать")
-async def ask_input(message: types.Message):
-    await message.answer("Отправь текст для классификации.")
+async def main():
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(dp.start_polling(bot))
+    asyncio.run(main())
