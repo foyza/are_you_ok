@@ -1,39 +1,45 @@
 import pandas as pd
-import joblib
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, f1_score
+import joblib
 
-# Мини-датасет (можно расширить, чтобы лучше работало)
-data = [
-    ("The book on the table is mine.", 1),
-    ("Mary seems to have been sleeping.", 1),
-    ("The cat chased the mouse.", 1),
-    ("It appears that John left.", 1),
-    ("This sentence is perfectly fine.", 1),
-    ("*Is the John tall?", 0),
-    ("*She appears that is happy.", 0),
-    ("*They are interested with linguistics.", 0),
-    ("*Him likes they.", 0),
-    ("*The child seems that is hungry.", 0),
-    # Можно добавить ещё предложений, чтобы модель была точнее
-]
+good_sentences = [
+    "Сегодня хорошая погода.",
+    "Я люблю программировать на Python.",
+    "Машинное обучение — это интересно.",
+    "Мы идём в кино вечером.",
+    "У меня есть домашнее задание.",
+    "Она купила новую книгу.",
+    "Я читаю статью про AI.",
+    "Моя собака любит играть на улице.",
+    "Он учится в университете.",
+    "Мы будем путешествовать летом.",
+] * 20  
 
-df = pd.DataFrame(data, columns=["sentence","label"])
-X_train, X_test, y_train, y_test = train_test_split(df["sentence"], df["label"], test_size=0.2, random_state=42, stratify=df["label"])
+bad_sentences = [
+    "sjandvwbsid qweqwe.",
+    "lkmnvois dksjfhg.",
+    "qwoeirupz mxncvb.",
+    "asdkljfh qweoiu.",
+    "zxcmnqwe lkjhgf.",
+] * 40  
 
-model = Pipeline([
-    ("tfidf", TfidfVectorizer(max_features=20000, ngram_range=(1,2), sublinear_tf=True)),
-    ("clf", LogisticRegression(max_iter=2000, n_jobs=1))
-])
+data = good_sentences + bad_sentences
+labels = [1]*200 + [0]*200
 
+vectorizer = TfidfVectorizer(ngram_range=(1,3))
+X = vectorizer.fit_transform(data)
+y = labels
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LogisticRegression(max_iter=500)
 model.fit(X_train, y_train)
-preds = model.predict(X_test)
-acc = accuracy_score(y_test, preds)
-f1  = f1_score(y_test, preds)
-print(f"Accuracy: {acc:.3f}  F1: {f1:.3f}")
 
-joblib.dump(model, "model.joblib")
-print("✅ Model saved as model.joblib")
+accuracy = model.score(X_test, y_test)
+print(f"Test Accuracy: {accuracy:.2f}")
+
+joblib.dump(model, "grammar_model.pkl")
+joblib.dump(vectorizer, "tfidf_vectorizer.pkl")
+print("Model and vectorizer saved!")
