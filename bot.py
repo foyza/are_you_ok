@@ -23,4 +23,4 @@ async def check_grammar(message: types.Message):
         await message.answer(f"❌ Предложение выглядит неграмматично.\nConfidence: {conf:.2f}")
 
 if __name__ == "__main__":
-    asyncio.run(dp.start_polling(bot))
+    asyncio.run(dp.start_polling(bot, skip_updates=True))
