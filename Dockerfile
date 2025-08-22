@@ -1,11 +1,10 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY . .
-
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python train_model.py
+COPY . .
 
 CMD ["python", "bot.py"]
