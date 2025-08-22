@@ -1,34 +1,44 @@
-import logging
 import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from tensorflow.keras.models import load_model
+import pickle
+import numpy as np
+import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.preprocessing.text import Tokenizer
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("BOT_TOKEN")
+load_dotenv()
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+
 bot = Bot(token=TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(bot)
 
-# Загружаем модель
-model = load_model("model.h5")
-tokenizer = Tokenizer(num_words=1000)
+# Загружаем модель и токенайзер
+model = tf.keras.models.load_model("model.h5")
+with open("tokenizer.pkl", "rb") as f:
+    word_index = pickle.load(f)
 
-@dp.message(Command("start"))
+max_length = 200
+
+def text_to_sequence(text):
+    tokens = [word_index.get(word, 0) for word in text.lower().split()]
+    return pad_sequences([tokens], maxlen=max_length)
+
+@dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    await message.answer("Привет! Напиши текст, а я оценю, счастлив ты или нет 🙂")
+    await message.answer("Привет! Отправь текст, а я скажу, насколько он счастливый 😊")
 
-@dp.message()
-async def analyze(message: types.Message):
-    text = message.text
-    seq = tokenizer.texts_to_sequences([text])
-    seq = pad_sequences(seq, maxlen=10)
-    pred = model.predict(seq)[0][0]
-    if pred > 0.5:
-        await message.answer(f"😊 Ты выглядишь счастливым! ({pred:.2f})")
+@dp.message_handler()
+async def predict(message: types.Message):
+    seq = text_to_sequence(message.text)
+    prediction = model.predict(seq)[0][0]
+    if prediction > 0.6:
+        mood = "Счастливый 😍"
+    elif prediction > 0.4:
+        mood = "Нейтральный 🙂"
     else:
-        await message.answer(f"😔 Ты выглядишь грустным. ({pred:.2f})")
+        mood = "Грустный 😢"
+    await message.answer(f"Твой текст выглядит как: {mood} (уверенность {prediction:.2f})")
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(dp.start_polling(bot))
+    executor.start_polling(dp, skip_updates=True)
